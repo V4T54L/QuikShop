@@ -26,6 +26,7 @@ func RegisterRoutes() http.Handler {
 	productHandler := handler.NewProductHandler(*services.NewProductService(store.NewMockProductStore()))
 
 	r.Get("/products", productHandler.SearchProductHandler)
+	r.Get("/products/{id}", productHandler.GetProductDetailHandler)
 
 	return r
 }
