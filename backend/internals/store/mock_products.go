@@ -262,3 +262,11 @@ func (s *MockProductStore) SearchProducts(ctx context.Context, query string, sta
 func (s *MockProductStore) GetProductByID(ctx context.Context, productID int) (*models.ProductDetail, error) {
 	return s.getProductDetail(productID, rand.Int()%20), nil
 }
+
+func (s *MockProductStore) GetProductsByIDs(ctx context.Context, ids []int) ([]models.ProductSummary, error) {
+	products := make([]models.ProductSummary, 0, len(ids))
+	for _, productId := range ids {
+		products = append(products, *s.getProductSummmary(productId))
+	}
+	return products, nil
+}

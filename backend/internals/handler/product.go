@@ -1,22 +1,13 @@
 package handler
 
 import (
-	"backend/internals/services"
 	"backend/utils"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type ProductHandler struct {
-	service services.ProductService
-}
-
-func NewProductHandler(service services.ProductService) *ProductHandler {
-	return &ProductHandler{service: service}
-}
-
-func (h *ProductHandler) SearchProductHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) SearchProductHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("query")
 	pageNo, err := utils.GetInt(r.URL.Query().Get("pageNo"))
 	if err != nil {
@@ -37,7 +28,7 @@ func (h *ProductHandler) SearchProductHandler(w http.ResponseWriter, r *http.Req
 		limit = &lim
 	}
 
-	products, err := h.service.GetProductsBySearch(r.Context(), query, *pageNo, *limit)
+	products, err := h.productService.GetProductsBySearch(r.Context(), query, *pageNo, *limit)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -46,7 +37,7 @@ func (h *ProductHandler) SearchProductHandler(w http.ResponseWriter, r *http.Req
 	jsonResponse(w, http.StatusOK, products)
 }
 
-func (h *ProductHandler) GetProductDetailHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetProductDetailHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.GetInt(chi.URLParam(r, "id"))
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
@@ -58,7 +49,7 @@ func (h *ProductHandler) GetProductDetailHandler(w http.ResponseWriter, r *http.
 	// 	return
 	// }
 
-	productDetail, err := h.service.GetProductDetail(r.Context(), *id)
+	productDetail, err := h.productService.GetProductDetail(r.Context(), *id)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, err.Error())
 		return

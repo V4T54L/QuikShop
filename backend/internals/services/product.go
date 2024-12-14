@@ -31,3 +31,9 @@ func (s *ProductService) GetProductDetail(mainCtx context.Context, productID int
 	defer cancel()
 	return s.store.GetProductByID(ctx, productID)
 }
+
+func (s *ProductService) GetProductByIDs(mainCtx context.Context, productIDs []int) ([]models.ProductSummary, error) {
+	ctx, cancel := context.WithTimeout(mainCtx, maxQueryTime)
+	defer cancel()
+	return s.store.GetProductsByIDs(ctx, productIDs)
+}
