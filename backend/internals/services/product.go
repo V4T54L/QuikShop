@@ -4,11 +4,7 @@ import (
 	"backend/internals/models"
 	"backend/internals/store"
 	"context"
-	"time"
-)
-
-const (
-	maxQueryTime = 5 * time.Second
+	"errors"
 )
 
 type ProductService struct {
@@ -19,15 +15,34 @@ func NewProductService(store store.ProductStore) *ProductService {
 	return &ProductService{store: store}
 }
 
-func (s *ProductService) GetProductsBySearch(mainCtx context.Context, query string, pageNo, limit int) ([]models.ProductSummary, error) {
-	start := pageNo * limit
-	ctx, cancel := context.WithTimeout(mainCtx, maxQueryTime)
-	defer cancel()
-	return s.store.SearchProducts(ctx, query, start, limit)
+func (ps *ProductService) GetProducts(ctx context.Context) ([]models.ProductDetail, error) {
+	return ps.store.GetProducts(ctx)
 }
 
-func (s *ProductService) GetProductDetail(mainCtx context.Context, productID int) (*models.ProductDetail, error) {
-	ctx, cancel := context.WithTimeout(mainCtx, maxQueryTime)
-	defer cancel()
-	return s.store.GetProductByID(ctx, productID)
+func (ps *ProductService) CreateProduct(ctx context.Context, product *models.ProductDetail) error {
+	// validate product details
+	if product.Name == "" || product.Price == 0 || product.Stock == 0 {
+		return errors.New("name, price and stock are required")
+	}
+
+	return ps.store.CreateProduct(ctx, product)
+}
+
+func (ps *ProductService) UpdateProduct(ctx context.Context, product *models.ProductDetail) error {
+	if product.ID == 0 {
+		return errors.New("product ID is required")
+	}
+	if product.Name == "" || product.Price == 0 || product.Stock == 0 {
+		return errors.New("name, price and stock are required")
+	}
+
+	return ps.store.UpdateProduct(ctx, product)
+}
+
+func (ps *ProductService) DeleteProduct(ctx context.Context, id int) error {
+	if id == 0 {
+		return errors.New("product ID is required")
+	}
+
+	return ps.store.DeleteProduct(ctx, id)
 }

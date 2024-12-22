@@ -36,14 +36,16 @@ func RegisterRoutes() http.Handler {
 	}))
 
 	userHandler := handler.NewUserHandler(services.NewUserService(store.NewUserStore(db)))
-	// productHandler := handler.NewProductHandler(*services.NewProductService(store.NewMockProductStore()))
-
-	// r.Get("/products", productHandler.SearchProductHandler)
-	// r.Get("/products/{id}", productHandler.GetProductDetailHandler)
+	productHandler := handler.NewProductHandler(*services.NewProductService(store.NewProductStore(db)))
 
 	r.Post("/users/register", userHandler.RegisterUserHandler)
 	r.Post("/users/login", userHandler.LoginUserHandler)
 	r.Get("/users/{userID}", userHandler.GetUserProfile)
+
+	r.Get("/products", productHandler.GetProducts)
+	r.Post("/products", productHandler.CreateProduct)
+	r.Put("/products", productHandler.UpdateProduct)
+	r.Delete("/products/{productID}", productHandler.DeleteProduct)
 
 	return r
 }

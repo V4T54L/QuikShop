@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"backend/internals/models"
 	"backend/internals/services"
-	"backend/utils"
+	"encoding/json"
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
+	"strconv"
 )
 
 type ProductHandler struct {
@@ -16,28 +16,9 @@ func NewProductHandler(service services.ProductService) *ProductHandler {
 	return &ProductHandler{service: service}
 }
 
-func (h *ProductHandler) SearchProductHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("query")
-	pageNo, err := utils.GetInt(r.URL.Query().Get("pageNo"))
-	if err != nil {
-		errorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if pageNo == nil {
-		pgNo := 0
-		pageNo = &pgNo
-	}
-	limit, err := utils.GetInt(r.URL.Query().Get("limit"))
-	if err != nil {
-		errorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if limit == nil {
-		lim := 10
-		limit = &lim
-	}
-
-	products, err := h.service.GetProductsBySearch(r.Context(), query, *pageNo, *limit)
+func (ph *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	products, err := ph.service.GetProducts(ctx)
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -46,23 +27,53 @@ func (h *ProductHandler) SearchProductHandler(w http.ResponseWriter, r *http.Req
 	jsonResponse(w, http.StatusOK, products)
 }
 
-func (h *ProductHandler) GetProductDetailHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := utils.GetInt(chi.URLParam(r, "id"))
-	if err != nil {
+func (ph *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	product := &models.ProductDetail{}
+	if err := json.NewDecoder(r.Body).Decode(product); err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	// id=nil ? not handled by search product handler
-	// if id == nil {
-	// 	errorResponse(w, http.StatusBadRequest, "id not provided in path param")
-	// 	return
-	// }
 
-	productDetail, err := h.service.GetProductDetail(r.Context(), *id)
-	if err != nil {
+	if err := ph.service.CreateProduct(r.Context(), product); err != nil {
 		errorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	jsonResponse(w, http.StatusOK, productDetail)
+	jsonResponse(w, http.StatusCreated, product)
+}
+
+func (ph *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	product := &models.ProductDetail{}
+	if err := json.NewDecoder(r.Body).Decode(product); err != nil {
+		errorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := ph.service.UpdateProduct(r.Context(), product); err != nil {
+		errorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, product)
+}
+
+func (ph *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	productID := r.URL.Query().Get("productID")
+	if productID == "" {
+		errorResponse(w, http.StatusBadRequest, "product ID is required")
+		return
+	}
+
+	id, err := strconv.Atoi(productID)
+	if err != nil {
+		errorResponse(w, http.StatusBadRequest, "invalid product ID")
+		return
+	}
+
+	if err := ph.service.DeleteProduct(r.Context(), id); err != nil {
+		errorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	jsonResponse(w, http.StatusOK, map[string]string{"message": "product deleted"})
 }
