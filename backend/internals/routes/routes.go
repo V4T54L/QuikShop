@@ -23,7 +23,11 @@ func RegisterRoutes() http.Handler {
 		MaxAge:           300,
 	}))
 
-handler := handler.NewHandler(*services.NewProductService(store.NewMockProductStore()), *services.NewCartService(store.NewMockCartStore()))
+	handler := handler.NewHandler(
+		*services.NewProductService(store.NewMockProductStore()),
+		*services.NewCartService(store.NewMockCartStore()),
+		*services.NewUserService(store.NewMockUserStore()),
+	)
 
 	r.Get("/products", handler.SearchProductHandler)
 	r.Get("/products/{id}", handler.GetProductDetailHandler)
