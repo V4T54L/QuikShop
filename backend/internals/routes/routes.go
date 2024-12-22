@@ -1,9 +1,11 @@
 package routes
 
 import (
+	"backend/internals/database"
 	"backend/internals/handler"
 	"backend/internals/services"
 	"backend/internals/store"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,6 +14,16 @@ import (
 )
 
 func RegisterRoutes() http.Handler {
+	db, err := database.New(
+		"postgresql://postgres:admin@localhost:5432/quikshop?sslmode=disable",
+		30,
+		30,
+		"15m",
+	)
+	if err != nil {
+		log.Fatal("error intializing database connection : ", db)
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -23,10 +35,15 @@ func RegisterRoutes() http.Handler {
 		MaxAge:           300,
 	}))
 
-	productHandler := handler.NewProductHandler(*services.NewProductService(store.NewMockProductStore()))
+	userHandler := handler.NewUserHandler(services.NewUserService(store.NewUserStore(db)))
+	// productHandler := handler.NewProductHandler(*services.NewProductService(store.NewMockProductStore()))
 
-	r.Get("/products", productHandler.SearchProductHandler)
-	r.Get("/products/{id}", productHandler.GetProductDetailHandler)
+	// r.Get("/products", productHandler.SearchProductHandler)
+	// r.Get("/products/{id}", productHandler.GetProductDetailHandler)
+
+	r.Post("/users/register", userHandler.RegisterUserHandler)
+	r.Post("/users/login", userHandler.LoginUserHandler)
+	r.Get("/users/{userID}", userHandler.GetUserProfile)
 
 	return r
 }
