@@ -37,6 +37,7 @@ func RegisterRoutes() http.Handler {
 
 	userHandler := handler.NewUserHandler(services.NewUserService(store.NewUserStore(db)))
 	productHandler := handler.NewProductHandler(*services.NewProductService(store.NewProductStore(db)))
+	cartHandler := handler.NewCartHandler(*services.NewCartService(store.NewCartStore(db)))
 
 	r.Post("/users/register", userHandler.RegisterUserHandler)
 	r.Post("/users/login", userHandler.LoginUserHandler)
@@ -46,6 +47,11 @@ func RegisterRoutes() http.Handler {
 	r.Post("/products", productHandler.CreateProduct)
 	r.Put("/products", productHandler.UpdateProduct)
 	r.Delete("/products/{productID}", productHandler.DeleteProduct)
+
+	r.Get("/cart", cartHandler.GetCart)
+	r.Post("/cart", cartHandler.AddToCart)
+	r.Delete("/cart", cartHandler.ClearCart)
+	r.Delete("/cart/{productID}", cartHandler.RemoveFromCart)
 
 	return r
 }
