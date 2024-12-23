@@ -27,7 +27,9 @@ func RegisterRoutes() http.Handler {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	// r.Use()
+	r.Use(middleware.Recoverer)
+
+	// TODO: Add rate limiting middleware
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
