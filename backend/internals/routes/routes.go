@@ -3,6 +3,7 @@ package routes
 import (
 	"backend/internals/database"
 	"backend/internals/handler"
+	customMiddlewares "backend/internals/middlewares"
 	"backend/internals/services"
 	"backend/internals/store"
 	"log"
@@ -26,6 +27,7 @@ func RegisterRoutes() http.Handler {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	// r.Use()
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
@@ -38,20 +40,38 @@ func RegisterRoutes() http.Handler {
 	userHandler := handler.NewUserHandler(services.NewUserService(store.NewUserStore(db)))
 	productHandler := handler.NewProductHandler(*services.NewProductService(store.NewProductStore(db)))
 	cartHandler := handler.NewCartHandler(*services.NewCartService(store.NewCartStore(db)))
+	orderHandler := handler.NewOrderHandler(*services.NewOrderService(store.NewOrderStore(db)))
 
 	r.Post("/users/register", userHandler.RegisterUserHandler)
 	r.Post("/users/login", userHandler.LoginUserHandler)
-	r.Get("/users/{userID}", userHandler.GetUserProfile)
 
 	r.Get("/products", productHandler.GetProducts)
-	r.Post("/products", productHandler.CreateProduct)
-	r.Put("/products", productHandler.UpdateProduct)
-	r.Delete("/products/{productID}", productHandler.DeleteProduct)
 
-	r.Get("/cart", cartHandler.GetCart)
-	r.Post("/cart", cartHandler.AddToCart)
-	r.Delete("/cart", cartHandler.ClearCart)
-	r.Delete("/cart/{productID}", cartHandler.RemoveFromCart)
+	// user only routes
+	r.Group(func(r chi.Router) {
+		r.Use(customMiddlewares.UserOnlyMiddleware)
+		r.Get("/users/{userID}", userHandler.GetUserProfile)
+
+		r.Get("/cart", cartHandler.GetCart)
+		r.Post("/cart", cartHandler.AddToCart)
+		r.Delete("/cart", cartHandler.ClearCart)
+		r.Delete("/cart/{productID}", cartHandler.RemoveFromCart)
+
+		r.Post("/orders", orderHandler.CreateOrder)
+		r.Get("/orders", orderHandler.GetOrders)
+		r.Get("/orders/{orderID}", orderHandler.GetOrder)
+	})
+
+	// admin only routes
+	r.Group(func(r chi.Router) {
+		r.Use(customMiddlewares.AdminOnlyMiddleware)
+
+		r.Post("/products", productHandler.CreateProduct)
+		r.Put("/products", productHandler.UpdateProduct)
+		r.Delete("/products/{productID}", productHandler.DeleteProduct)
+
+		r.Put("/orders/{orderID}", orderHandler.UpdateOrderStatus)
+	})
 
 	return r
 }
